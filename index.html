@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Barcode Inventory Scanner</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <h1>📦 Inventory Scanner</h1>
+            <p>Scan barcodes to manage your inventory</p>
+        </header>
+
+        <!-- Configuration Section -->
+        <section class="card configuration-section">
+            <div class="card__header">
+                <h2>⚙️ Airtable Configuration</h2>
+            </div>
+            <div class="card__body">
+                <div class="form-group">
+                    <label for="baseId" class="form-label">Base ID</label>
+                    <input type="text" id="baseId" class="form-control" placeholder="appXXXXXXXXXXXXXX">
+                    <small class="help-text">Find in your Airtable base URL</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tableName" class="form-label">Table Name</label>
+                    <input type="text" id="tableName" class="form-control" placeholder="Inventory" value="Inventory">
+                </div>
+                
+                <div class="form-group">
+                    <label for="apiKey" class="form-label">Personal Access Token</label>
+                    <input type="password" id="apiKey" class="form-control" placeholder="patXXXXXXXXXXXXXX">
+                    <small class="help-text">Generate in your Airtable account settings</small>
+                </div>
+                
+                <div class="flex gap-8">
+                    <button id="saveConfig" class="btn btn--primary">Save Configuration</button>
+                    <button id="testConnection" class="btn btn--outline">Test Connection</button>
+                </div>
+                
+                <div id="configStatus" class="status-message hidden"></div>
+            </div>
+        </section>
+
+        <!-- Scanner Section -->
+        <section class="card scanner-section">
+            <div class="card__header">
+                <h2>📷 Barcode Scanner</h2>
+            </div>
+            <div class="card__body">
+                <div id="scanner-container">
+                    <div id="reader" style="width: 100%; display: none;"></div>
+                    <div id="scanner-placeholder" class="scanner-placeholder">
+                        <div class="scanner-icon">📱</div>
+                        <p>Click "Start Camera" to begin scanning</p>
+                    </div>
+                </div>
+                
+                <div class="scanner-controls">
+                    <button id="startCamera" class="btn btn--primary btn--lg btn--full-width">Start Camera</button>
+                    <button id="stopCamera" class="btn btn--secondary btn--lg btn--full-width hidden">Stop Camera</button>
+                </div>
+                
+                <div id="scanResult" class="scan-result hidden">
+                    <div class="scanned-code">
+                        <strong>Scanned Code:</strong>
+                        <span id="barcodeValue"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Product Management Section -->
+        <section class="card product-section" id="productSection">
+            <div class="card__header">
+                <h2>📋 Product Management</h2>
+            </div>
+            <div class="card__body">
+                <div class="product-info">
+                    <div class="form-group">
+                        <label for="productName" class="form-label">Product Name</label>
+                        <input type="text" id="productName" class="form-control" placeholder="Enter product name">
+                    </div>
+                    
+                    <div class="current-quantity">
+                        <label class="form-label">Current Quantity</label>
+                        <div id="currentQuantity" class="quantity-display">0</div>
+                    </div>
+                </div>
+                
+                <div class="quantity-controls">
+                    <div class="form-group">
+                        <label for="quantityChange" class="form-label">Quantity Change</label>
+                        <input type="number" id="quantityChange" class="form-control" placeholder="Enter amount" value="1" min="1">
+                    </div>
+                    
+                    <div class="quick-actions">
+                        <button class="btn btn--sm quick-btn" data-value="1">+1</button>
+                        <button class="btn btn--sm quick-btn" data-value="-1">-1</button>
+                        <button class="btn btn--sm quick-btn" data-value="5">+5</button>
+                        <button class="btn btn--sm quick-btn" data-value="-5">-5</button>
+                        <button class="btn btn--sm quick-btn" data-value="10">+10</button>
+                        <button class="btn btn--sm quick-btn" data-value="-10">-10</button>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button id="addInventory" class="btn btn--primary">➕ Add Inventory</button>
+                        <button id="subtractInventory" class="btn btn--secondary">➖ Subtract Inventory</button>
+                    </div>
+                    
+                    <button id="updateInventory" class="btn btn--lg btn--full-width hidden">Update Inventory</button>
+                </div>
+                
+                <div id="updateStatus" class="status-message hidden"></div>
+            </div>
+        </section>
+
+        <!-- Demo Section for Testing -->
+        <section class="card demo-section">
+            <div class="card__header">
+                <h2>🧪 Demo Mode</h2>
+            </div>
+            <div class="card__body">
+                <p class="help-text">For testing without a real barcode scanner, use these sample barcodes:</p>
+                <div class="demo-barcodes">
+                    <button class="btn btn--outline btn--sm demo-barcode-btn" data-barcode="123456789012">Sample Barcode 1</button>
+                    <button class="btn btn--outline btn--sm demo-barcode-btn" data-barcode="987654321098">Sample Barcode 2</button>
+                    <button class="btn btn--outline btn--sm demo-barcode-btn" data-barcode="456789123456">Sample Barcode 3</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Instructions Section -->
+        <section class="card instructions-section">
+            <div class="card__header">
+                <h2>📖 Instructions</h2>
+            </div>
+            <div class="card__body">
+                <ol class="instructions-list">
+                    <li>Configure your Airtable connection above</li>
+                    <li>Create a table with fields: "Barcode", "Product Name", "Quantity", "Last Updated"</li>
+                    <li>Click "Start Camera" to begin scanning or use Demo Mode</li>
+                    <li>Scan a product barcode</li>
+                    <li>Enter product name (for new items) or modify existing quantities</li>
+                    <li>Click Add or Subtract to update inventory</li>
+                </ol>
+                
+                <div class="help-links">
+                    <p><strong>Need help getting started?</strong></p>
+                    <a href="https://airtable.com/developers/web/api/introduction" target="_blank" class="help-link">📚 Airtable API Docs</a>
+                    <a href="https://airtable.com/create/tokens" target="_blank" class="help-link">🔑 Create Access Token</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading Overlay - Hidden by default -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <p id="loadingMessage">Processing...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
