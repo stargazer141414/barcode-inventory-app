@@ -10,6 +10,7 @@ class InventoryScanner {
         this.currentBarcode = null;
         this.currentProduct = null;
         this.pendingAction = null;
+        this.isExistingProduct = false;
         
         this.init();
     }
@@ -22,6 +23,9 @@ class InventoryScanner {
         
         // Ensure loading overlay is hidden on startup
         this.hideLoading();
+        
+        // Initialize form state
+        this.resetFormValidation();
     }
     
     bindEvents() {
@@ -41,6 +45,9 @@ class InventoryScanner {
         // Form events
         document.getElementById('quantityChange').addEventListener('input', (e) => this.validateQuantityInput(e));
         document.getElementById('productName').addEventListener('input', (e) => this.validateProductName(e));
+        document.getElementById('productColor').addEventListener('change', (e) => this.handleColorChange(e));
+        document.getElementById('productSize').addEventListener('change', (e) => this.validateFormFields());
+        document.getElementById('customColor').addEventListener('input', (e) => this.validateFormFields());
     }
     
     setupQuickActions() {
@@ -48,21 +55,23 @@ class InventoryScanner {
         quickButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 
                 // Remove active class from all buttons
                 quickButtons.forEach(b => b.classList.remove('active'));
                 
                 // Add active class to clicked button
-                e.target.classList.add('active');
+                btn.classList.add('active');
                 
-                const value = parseInt(e.target.dataset.value);
+                const value = parseInt(btn.dataset.value);
                 const quantityInput = document.getElementById('quantityChange');
                 
                 // Update the quantity input field with absolute value
                 quantityInput.value = Math.abs(value);
                 
                 // Clear any previous status messages
-                document.getElementById('updateStatus').classList.add('hidden');
+                const updateStatus = document.getElementById('updateStatus');
+                updateStatus.classList.add('hidden');
                 
                 // Auto-prepare the inventory update based on positive/negative value
                 setTimeout(() => {
@@ -71,7 +80,7 @@ class InventoryScanner {
                     } else {
                         this.prepareInventoryUpdate('subtract');
                     }
-                }, 100);
+                }, 150);
             });
         });
     }
@@ -81,9 +90,89 @@ class InventoryScanner {
         demoBarcodeButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const barcode = e.target.dataset.barcode;
+                e.stopPropagation();
+                const barcode = btn.dataset.barcode;
                 this.simulateBarcodeScann(barcode);
             });
+        });
+    }
+    
+    handleColorChange(e) {
+        const customColorGroup = document.getElementById('customColorGroup');
+        const customColorInput = document.getElementById('customColor');
+        
+        if (e.target.value === 'Custom') {
+            customColorGroup.style.display = 'block';
+            customColorInput.focus();
+            customColorInput.required = true;
+        } else {
+            customColorGroup.style.display = 'none';
+            customColorInput.value = '';
+            customColorInput.required = false;
+        }
+        
+        // Small delay to ensure DOM is updated
+        setTimeout(() => {
+            this.validateFormFields();
+        }, 50);
+    }
+    
+    validateFormFields() {
+        const productName = document.getElementById('productName').value.trim();
+        const productColor = document.getElementById('productColor').value;
+        const productSize = document.getElementById('productSize').value;
+        const customColor = document.getElementById('customColor').value.trim();
+        
+        const hasValidName = productName.length > 0;
+        const hasValidColor = productColor && (productColor !== 'Custom' || customColor.length > 0);
+        const hasValidSize = productSize.length > 0;
+        
+        // For existing products, we only require quantity changes
+        const isFormValid = this.isExistingProduct ? hasValidName : 
+                           hasValidName && hasValidColor && hasValidSize;
+        
+        const addBtn = document.getElementById('addInventory');
+        const subtractBtn = document.getElementById('subtractInventory');
+        
+        if (addBtn && subtractBtn) {
+            addBtn.disabled = !isFormValid;
+            subtractBtn.disabled = !isFormValid;
+        }
+        
+        // Add visual feedback
+        this.updateFieldValidation('productName', hasValidName);
+        if (!this.isExistingProduct) {
+            this.updateFieldValidation('productColor', hasValidColor);
+            this.updateFieldValidation('productSize', hasValidSize);
+            if (productColor === 'Custom') {
+                this.updateFieldValidation('customColor', customColor.length > 0);
+            }
+        }
+        
+        return isFormValid;
+    }
+    
+    updateFieldValidation(fieldId, isValid) {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.classList.remove('invalid', 'valid');
+            if (!this.isExistingProduct) {
+                if (isValid) {
+                    field.classList.add('valid');
+                } else {
+                    field.classList.add('invalid');
+                }
+            }
+        }
+    }
+    
+    resetFormValidation() {
+        const fields = ['productName', 'productColor', 'productSize', 'customColor'];
+        fields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.classList.remove('valid', 'invalid');
+            }
         });
     }
     
@@ -134,13 +223,13 @@ class InventoryScanner {
             if (this.config.baseId.includes('demo') || this.config.apiKey.includes('demo') || 
                 this.config.baseId === 'app123456789012345' || this.config.apiKey === 'pat123456789012345') {
                 this.hideLoading();
-                this.showStatus('configStatus', 'success', 'Demo mode: Connection test successful! You can now use the scanner or demo barcodes.');
+                this.showStatus('configStatus', 'success', 'Demo mode: Connection test successful! Ready to scan with expanded Color & Size tracking including Women\'s sizes 4-26.');
             } else {
                 const response = await this.makeAirtableRequest('GET', `/${this.config.baseId}/${this.config.tableName}?maxRecords=1`);
                 
                 this.hideLoading();
                 if (response.records !== undefined) {
-                    this.showStatus('configStatus', 'success', 'Connection successful! Ready to scan barcodes.');
+                    this.showStatus('configStatus', 'success', 'Connection successful! Ready to scan barcodes with enhanced inventory tracking including expanded size options.');
                 } else {
                     throw new Error('Invalid response format');
                 }
@@ -229,10 +318,7 @@ class InventoryScanner {
     }
     
     simulateBarcodeScann(barcode) {
-        if (!this.isConfigured()) {
-            this.showStatus('configStatus', 'error', 'Please configure Airtable connection first');
-            return;
-        }
+        // Always allow demo scanning, even without full configuration for testing purposes
         
         // Provide haptic feedback if available
         if (navigator.vibrate) {
@@ -245,8 +331,12 @@ class InventoryScanner {
         document.getElementById('barcodeValue').textContent = barcode;
         document.getElementById('scanResult').classList.remove('hidden');
         
+        // Clear any existing status messages
+        document.getElementById('updateStatus').classList.add('hidden');
+        document.getElementById('configStatus').classList.add('hidden');
+        
         // Look up product in demo data or Airtable
-        this.showLoading('Looking up product...');
+        this.showLoading('Searching for existing product...');
         setTimeout(() => {
             this.simulateProductLookup(barcode);
         }, 1000);
@@ -259,20 +349,39 @@ class InventoryScanner {
     simulateProductLookup(barcode) {
         this.hideLoading();
         
-        // Simulate demo products
+        // Enhanced demo products with expanded color and size options including women's sizes
         const demoProducts = {
-            '123456789012': { name: 'Demo Product A', quantity: 15 },
-            '987654321098': { name: 'Demo Product B', quantity: 8 },
-            '456789123456': { name: 'Demo Product C', quantity: 0 }
+            '123456789012': { 
+                name: 'Demo Dress A', 
+                quantity: 15, 
+                color: 'Blue', 
+                size: '12' // Women's size
+            },
+            '987654321098': { 
+                name: 'Demo Jeans B', 
+                quantity: 8, 
+                color: 'Black', 
+                size: '16' // Women's size
+            },
+            '456789123456': { 
+                name: 'Demo Youth Shirt C', 
+                quantity: 3, 
+                color: 'Red', 
+                size: '10y' // Youth size
+            }
         };
         
         if (demoProducts[barcode]) {
-            // Existing product
+            // Existing product found
             this.currentProduct = {
                 id: 'demo_' + barcode,
                 fields: {
+                    'Barcode': barcode,
                     'Product Name': demoProducts[barcode].name,
-                    'Quantity': demoProducts[barcode].quantity
+                    'Quantity': demoProducts[barcode].quantity,
+                    'Color': demoProducts[barcode].color,
+                    'Size': demoProducts[barcode].size,
+                    'Last Updated': new Date().toISOString()
                 }
             };
             this.showExistingProduct();
@@ -314,41 +423,111 @@ class InventoryScanner {
     }
     
     showExistingProduct() {
+        this.isExistingProduct = true;
         const product = this.currentProduct;
         const productName = product.fields['Product Name'] || 'Unknown Product';
         const quantity = product.fields['Quantity'] || 0;
+        const color = product.fields['Color'] || 'Not specified';
+        const size = product.fields['Size'] || 'Not specified';
         
+        // Update section title
+        document.getElementById('productSectionTitle').textContent = '🔄 Update Existing Product';
+        
+        // Show existing product info panel
+        document.getElementById('existingProductInfo').classList.remove('hidden');
+        document.getElementById('existingProductName').textContent = productName;
+        document.getElementById('existingProductColor').textContent = color;
+        document.getElementById('existingProductSize').textContent = size;
+        document.getElementById('existingProductQuantity').textContent = quantity;
+        
+        // Pre-fill form fields (read-only for existing products)
         document.getElementById('productName').value = productName;
         document.getElementById('productName').readOnly = true;
+        
+        // Set color dropdown to existing color value
+        const colorSelect = document.getElementById('productColor');
+        colorSelect.value = color;
+        colorSelect.disabled = true;
+        
+        // Set size dropdown to existing size value
+        const sizeSelect = document.getElementById('productSize');
+        sizeSelect.value = size;
+        sizeSelect.disabled = true;
+        
         document.getElementById('currentQuantity').textContent = quantity;
         
-        // Clear any error messages since product is found
-        document.getElementById('updateStatus').classList.add('hidden');
+        // Hide custom color field if it was showing
+        document.getElementById('customColorGroup').style.display = 'none';
         
-        this.showStatus('updateStatus', 'info', `Found existing product: ${productName}`);
+        // Clear form validation styles for existing products
+        this.resetFormValidation();
+        
+        this.showStatus('updateStatus', 'success', `✅ Existing product found! Current stock: ${quantity} units (${color}, Size ${size}). You can now add or subtract inventory.`);
+        
+        // Enable action buttons
+        this.validateFormFields();
     }
     
     showNewProduct() {
+        this.isExistingProduct = false;
+        
+        // Update section title
+        document.getElementById('productSectionTitle').textContent = '➕ Add New Product';
+        
+        // Hide existing product info panel
+        document.getElementById('existingProductInfo').classList.add('hidden');
+        
+        // Clear and enable form fields
         document.getElementById('productName').value = '';
         document.getElementById('productName').readOnly = false;
         document.getElementById('productName').focus();
+        
+        const colorSelect = document.getElementById('productColor');
+        colorSelect.value = '';
+        colorSelect.disabled = false;
+        
+        const sizeSelect = document.getElementById('productSize');
+        sizeSelect.value = '';
+        sizeSelect.disabled = false;
+        
         document.getElementById('currentQuantity').textContent = '0';
         
-        this.showStatus('updateStatus', 'info', 'New product detected. Please enter the product name below.');
+        // Hide custom color field initially
+        document.getElementById('customColorGroup').style.display = 'none';
+        document.getElementById('customColor').value = '';
+        
+        // Reset form validation
+        this.resetFormValidation();
+        
+        this.showStatus('updateStatus', 'info', '📦 New product detected! Please enter product name, select color and size (including Youth 6y-12y, Women\'s 4-26, or Standard XS-6XL), then set initial quantity.');
+        
+        // Disable action buttons until form is complete
+        setTimeout(() => {
+            this.validateFormFields();
+        }, 100);
     }
     
     prepareInventoryUpdate(action) {
-        const quantityChange = parseInt(document.getElementById('quantityChange').value) || 0;
-        const productName = document.getElementById('productName').value.trim();
-        
-        if (!productName) {
-            this.showStatus('updateStatus', 'error', 'Please enter a product name');
-            document.getElementById('productName').focus();
+        if (!this.validateFormFields()) {
+            const missingFields = [];
+            if (!document.getElementById('productName').value.trim()) missingFields.push('Product Name');
+            if (!this.isExistingProduct) {
+                if (!document.getElementById('productColor').value || 
+                    (document.getElementById('productColor').value === 'Custom' && 
+                     !document.getElementById('customColor').value.trim())) {
+                    missingFields.push('Color');
+                }
+                if (!document.getElementById('productSize').value) missingFields.push('Size');
+            }
+            
+            this.showStatus('updateStatus', 'error', `Please fill in required fields: ${missingFields.join(', ')}`);
             return;
         }
         
+        const quantityChange = parseInt(document.getElementById('quantityChange').value) || 0;
+        
         if (quantityChange <= 0) {
-            this.showStatus('updateStatus', 'error', 'Please enter a valid quantity');
+            this.showStatus('updateStatus', 'error', 'Please enter a valid quantity greater than 0');
             document.getElementById('quantityChange').focus();
             return;
         }
@@ -361,9 +540,15 @@ class InventoryScanner {
         document.getElementById('updateInventory').classList.remove('hidden');
         
         const actionText = action === 'add' ? 'Add' : 'Subtract';
-        document.getElementById('updateInventory').textContent = `${actionText} ${quantityChange} to Inventory`;
+        const operationType = this.isExistingProduct ? 'Update' : 'Create';
+        document.getElementById('updateInventory').textContent = `${actionText} ${quantityChange} - ${operationType} Record`;
         
-        this.showStatus('updateStatus', 'info', `Ready to ${action} ${quantityChange} units. Click the button below to confirm.`);
+        const currentQty = parseInt(document.getElementById('currentQuantity').textContent) || 0;
+        const newQty = action === 'add' ? currentQty + quantityChange : Math.max(0, currentQty - quantityChange);
+        
+        this.showStatus('updateStatus', 'info', 
+            `Ready to ${action} ${quantityChange} units${this.isExistingProduct ? 
+            ` (${currentQty} → ${newQty})` : ` as new product`}. Click button to confirm.`);
     }
     
     async updateInventory() {
@@ -373,27 +558,34 @@ class InventoryScanner {
         const productName = document.getElementById('productName').value.trim();
         const currentQuantity = parseInt(document.getElementById('currentQuantity').textContent) || 0;
         
+        // Get color value (handle custom color)
+        let color = document.getElementById('productColor').value;
+        if (color === 'Custom') {
+            color = document.getElementById('customColor').value.trim();
+        }
+        const size = document.getElementById('productSize').value;
+        
         let newQuantity;
         if (action === 'add') {
             newQuantity = currentQuantity + quantityChange;
         } else {
             newQuantity = Math.max(0, currentQuantity - quantityChange);
             if (currentQuantity < quantityChange) {
-                this.showStatus('updateStatus', 'error', `Cannot subtract ${quantityChange} from ${currentQuantity}. Setting quantity to 0.`);
+                this.showStatus('updateStatus', 'info', `Adjusted: Cannot subtract ${quantityChange} from ${currentQuantity}. Setting quantity to 0.`);
             }
         }
         
-        this.showLoading('Updating inventory...');
+        this.showLoading(`${this.isExistingProduct ? 'Updating' : 'Creating'} inventory record...`);
         
         try {
             // Simulate API call delay
             await new Promise(resolve => setTimeout(resolve, 1500));
             
             // For demo purposes, just update the UI
-            if (this.config.baseId.includes('demo') || this.config.apiKey.includes('demo') ||
+            if (!this.isConfigured() || this.config.baseId.includes('demo') || this.config.apiKey.includes('demo') ||
                 this.config.baseId === 'app123456789012345' || this.config.apiKey === 'pat123456789012345') {
                 // Demo mode - just update UI
-                this.handleInventoryUpdateSuccess(newQuantity, action, quantityChange);
+                this.handleInventoryUpdateSuccess(newQuantity, action, quantityChange, { color, size });
             } else {
                 // Real API call
                 const now = new Date().toISOString();
@@ -401,16 +593,18 @@ class InventoryScanner {
                     'Barcode': this.currentBarcode,
                     'Product Name': productName,
                     'Quantity': newQuantity,
+                    'Color': color,
+                    'Size': size,
                     'Last Updated': now
                 };
                 
                 let response;
                 if (this.currentProduct && !this.currentProduct.id.startsWith('demo_')) {
-                    // Update existing record
+                    // Update existing record using PATCH
                     response = await this.makeAirtableRequest(
                         'PATCH',
                         `/${this.config.baseId}/${this.config.tableName}/${this.currentProduct.id}`,
-                        { fields }
+                        { fields: { 'Quantity': newQuantity, 'Last Updated': now } }
                     );
                 } else {
                     // Create new record
@@ -421,21 +615,31 @@ class InventoryScanner {
                     );
                 }
                 
-                this.handleInventoryUpdateSuccess(newQuantity, action, quantityChange);
+                this.handleInventoryUpdateSuccess(newQuantity, action, quantityChange, { color, size });
             }
             
         } catch (error) {
             this.hideLoading();
-            this.showStatus('updateStatus', 'error', `Failed to update inventory: ${this.getErrorMessage(error)}`);
+            this.showStatus('updateStatus', 'error', `Failed to ${this.isExistingProduct ? 'update' : 'create'} inventory: ${this.getErrorMessage(error)}`);
         }
     }
     
-    handleInventoryUpdateSuccess(newQuantity, action, quantityChange) {
+    handleInventoryUpdateSuccess(newQuantity, action, quantityChange, productDetails) {
         this.hideLoading();
         
         // Update UI
         document.getElementById('currentQuantity').textContent = newQuantity;
-        this.showStatus('updateStatus', 'success', `Successfully ${action === 'add' ? 'added' : 'subtracted'} ${quantityChange} units! New quantity: ${newQuantity}`);
+        
+        if (this.isExistingProduct) {
+            // Update existing product display
+            document.getElementById('existingProductQuantity').textContent = newQuantity;
+            this.showStatus('updateStatus', 'success', 
+                `✅ Successfully ${action === 'add' ? 'added' : 'subtracted'} ${quantityChange} units! New quantity: ${newQuantity}`);
+        } else {
+            // Show success for new product
+            this.showStatus('updateStatus', 'success', 
+                `✅ New product created successfully! Initial quantity: ${newQuantity} units (Color: ${productDetails.color}, Size: ${productDetails.size})`);
+        }
         
         // Reset form
         this.resetInventoryForm();
@@ -448,7 +652,7 @@ class InventoryScanner {
         // Auto-hide success message and reset after delay
         setTimeout(() => {
             this.resetForNextScan();
-        }, 3000);
+        }, 4000);
     }
     
     resetInventoryForm() {
@@ -462,18 +666,37 @@ class InventoryScanner {
         document.querySelectorAll('.quick-btn').forEach(btn => {
             btn.classList.remove('active');
         });
+        
+        // Remove validation classes
+        this.resetFormValidation();
     }
     
     resetForNextScan() {
         document.getElementById('scanResult').classList.add('hidden');
         document.getElementById('updateStatus').classList.add('hidden');
+        document.getElementById('existingProductInfo').classList.add('hidden');
+        document.getElementById('productSectionTitle').textContent = '📋 Product Management';
+        
+        // Reset form
         document.getElementById('productName').value = '';
         document.getElementById('productName').readOnly = false;
+        document.getElementById('productColor').value = '';
+        document.getElementById('productColor').disabled = false;
+        document.getElementById('productSize').value = '';
+        document.getElementById('productSize').disabled = false;
+        document.getElementById('customColorGroup').style.display = 'none';
+        document.getElementById('customColor').value = '';
         document.getElementById('currentQuantity').textContent = '0';
+        
+        // Reset state
         this.currentBarcode = null;
         this.currentProduct = null;
+        this.isExistingProduct = false;
         
-        this.showStatus('configStatus', 'info', 'Ready for next scan. Use demo barcodes or start camera.');
+        // Remove validation classes
+        this.resetFormValidation();
+        
+        this.showStatus('configStatus', 'info', 'Ready for next scan. Use demo barcodes or start camera to continue.');
     }
     
     async makeAirtableRequest(method, endpoint, data = null) {
@@ -508,39 +731,26 @@ class InventoryScanner {
     }
     
     validateProductName(e) {
-        const hasName = e.target.value.trim().length > 0;
-        const addBtn = document.getElementById('addInventory');
-        const subtractBtn = document.getElementById('subtractInventory');
-        const updateStatus = document.getElementById('updateStatus');
-        
-        if (hasName) {
-            addBtn.disabled = false;
-            subtractBtn.disabled = false;
-            // Clear error message when valid name is entered
-            if (updateStatus.textContent.includes('Please enter a product name')) {
-                updateStatus.classList.add('hidden');
-            }
-        } else {
-            addBtn.disabled = true;
-            subtractBtn.disabled = true;
-        }
+        this.validateFormFields();
     }
     
     showStatus(elementId, type, message) {
         const statusEl = document.getElementById(elementId);
-        statusEl.className = `status-message ${type}`;
-        statusEl.textContent = message;
-        statusEl.classList.remove('hidden');
-        
-        // Auto-hide success and info messages (but keep error messages visible)
-        if (type === 'success') {
-            setTimeout(() => {
-                statusEl.classList.add('hidden');
-            }, 5000);
-        } else if (type === 'info') {
-            setTimeout(() => {
-                statusEl.classList.add('hidden');
-            }, 4000);
+        if (statusEl) {
+            statusEl.className = `status-message ${type}`;
+            statusEl.textContent = message;
+            statusEl.classList.remove('hidden');
+            
+            // Auto-hide success and info messages (but keep error messages visible)
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 6000);
+            } else if (type === 'info') {
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 5000);
+            }
         }
     }
     

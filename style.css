@@ -764,6 +764,31 @@ select.form-control {
   margin-bottom: var(--space-24);
 }
 
+.table-info {
+  margin-top: var(--space-16);
+  padding: var(--space-16);
+  background: var(--color-bg-6);
+  border-radius: var(--radius-base);
+  border: 1px solid rgba(var(--color-warning-rgb), 0.3);
+}
+
+.table-info strong {
+  color: var(--color-warning);
+  display: block;
+  margin-bottom: var(--space-8);
+}
+
+.table-info ul {
+  margin: 0;
+  padding-left: var(--space-20);
+  color: var(--color-text-secondary);
+}
+
+.table-info li {
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
 .help-text {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
@@ -865,8 +890,58 @@ select.form-control {
   margin-bottom: var(--space-24);
 }
 
+/* Existing Product Display */
+.existing-product-info {
+  margin-bottom: var(--space-20);
+  padding: var(--space-16);
+  background: var(--color-bg-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(var(--color-success-rgb), 0.3);
+}
+
+.product-status {
+  margin-bottom: var(--space-16);
+  text-align: center;
+}
+
+.existing-details {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-8) 0;
+  border-bottom: 1px solid rgba(var(--color-success-rgb), 0.2);
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.quantity-value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-success);
+}
+
 .product-info {
   margin-bottom: var(--space-20);
+}
+
+.product-attributes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-16);
+  margin-top: var(--space-16);
 }
 
 .current-quantity {
@@ -956,6 +1031,31 @@ select.form-control {
 .instructions-list li {
   margin-bottom: var(--space-8);
   line-height: var(--line-height-normal);
+}
+
+.workflow-info {
+  margin-top: var(--space-20);
+  padding: var(--space-16);
+  background: var(--color-bg-2);
+  border-radius: var(--radius-base);
+  border: 1px solid rgba(var(--color-warning-rgb), 0.3);
+}
+
+.workflow-info h4 {
+  color: var(--color-warning);
+  margin-bottom: var(--space-12);
+  font-size: var(--font-size-lg);
+}
+
+.workflow-info ul {
+  margin: 0;
+  padding-left: var(--space-20);
+  color: var(--color-text-secondary);
+}
+
+.workflow-info li {
+  margin-bottom: var(--space-6);
+  font-size: var(--font-size-sm);
 }
 
 .help-links {
@@ -1051,6 +1151,22 @@ select.form-control {
   .quick-actions {
     grid-template-columns: repeat(2, 1fr);
   }
+  
+  .product-attributes {
+    grid-template-columns: 1fr;
+    gap: var(--space-12);
+  }
+  
+  .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+    text-align: left;
+  }
+  
+  .quantity-value {
+    font-size: var(--font-size-lg);
+  }
 }
 
 /* Scanner video element styling */
@@ -1116,6 +1232,44 @@ select.form-control {
   font-size: var(--font-size-sm);
 }
 
+/* Custom color field styling */
+#customColorGroup {
+  margin-top: var(--space-12);
+  padding: var(--space-12);
+  background: var(--color-bg-2);
+  border-radius: var(--radius-base);
+  border: 1px solid rgba(var(--color-warning-rgb), 0.3);
+}
+
+/* Product form validation states */
+.form-control.invalid {
+  border-color: var(--color-error);
+  background-color: rgba(var(--color-error-rgb), 0.05);
+}
+
+.form-control.valid {
+  border-color: var(--color-success);
+  background-color: rgba(var(--color-success-rgb), 0.05);
+}
+
+/* Improved button states */
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn--primary:disabled {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+/* Enhanced existing product display */
+.existing-product-info .status--info {
+  font-size: var(--font-size-sm);
+  padding: var(--space-6) var(--space-12);
+}
+
 /* Accessibility improvements */
 @media (prefers-reduced-motion: reduce) {
   .loading-spinner {
@@ -1145,6 +1299,10 @@ select.form-control {
   .quantity-display {
     border-width: 3px;
   }
+  
+  .existing-product-info {
+    border-width: 2px;
+  }
 }
 
 /* Print styles (hide interactive elements) */
@@ -1155,4 +1313,49 @@ select.form-control {
   .demo-section {
     display: none;
   }
+}
+
+/* Animation for smooth transitions */
+.existing-product-info {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Focus ring improvements */
+.form-control:focus,
+.btn:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+/* Size and color field enhancements */
+.product-attributes .form-control {
+  font-weight: var(--font-weight-medium);
+}
+
+.product-attributes select option {
+  padding: var(--space-8);
+}
+
+/* Optgroup styling for size categories */
+.product-attributes select optgroup {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  font-style: normal;
+  margin-top: var(--space-4);
+}
+
+.product-attributes select optgroup option {
+  font-weight: var(--font-weight-normal);
+  padding-left: var(--space-12);
 }
