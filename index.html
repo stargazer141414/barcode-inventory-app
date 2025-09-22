@@ -48,10 +48,10 @@
                     <strong>Required Airtable Fields:</strong>
                     <ul>
                         <li>Barcode (Single line text - Primary)</li>
-                        <li>Product Name (Single line text - Auto-assigned for existing)</li>
+                        <li>Product Name (Single line text)</li>
                         <li>Quantity (Number)</li>
-                        <li>Color (Single line text)</li>
-                        <li>Size (Single line text)</li>
+                        <li>Color (Single select or Single line text)</li>
+                        <li>Size (Single select or Single line text)</li>
                         <li>Last Updated (Date/Time)</li>
                     </ul>
                 </div>
@@ -90,15 +90,11 @@
         <section class="card product-section" id="productSection">
             <div class="card__header">
                 <h2 id="productSectionTitle">📋 Product Management</h2>
-                <div id="productTypeIndicator" class="product-type-indicator hidden">
-                    <span id="productTypeLabel" class="product-type-label"></span>
-                </div>
             </div>
             <div class="card__body">
                 <div id="existingProductInfo" class="existing-product-info hidden">
                     <div class="product-status">
-                        <span class="status status--success">📦 Existing Product Found</span>
-                        <span class="auto-assignment-badge">🔄 Auto-assigned from database</span>
+                        <span class="status status--success">🔍 Existing Product Found</span>
                     </div>
                     <div class="existing-details">
                         <div class="detail-row">
@@ -120,19 +116,17 @@
                     </div>
                 </div>
 
+                <div id="newProductInfo" class="new-product-info hidden">
+                    <div class="product-status">
+                        <span class="status status--warning">➕ New Product - Manual Entry Required</span>
+                    </div>
+                </div>
+
                 <div class="product-info">
                     <div class="form-group">
-                        <label for="productName" class="form-label">
-                            Product Name
-                            <span id="productNameIndicator" class="field-indicator hidden"></span>
-                        </label>
-                        <div class="product-name-container">
-                            <input type="text" id="productName" class="form-control" placeholder="Enter product name">
-                            <div id="autoAssignedIndicator" class="auto-assigned-indicator hidden">
-                                <span class="indicator-icon">🔒</span>
-                                <span class="indicator-text">Auto-assigned from existing record</span>
-                            </div>
-                        </div>
+                        <label for="productName" class="form-label">Product Name</label>
+                        <input type="text" id="productName" class="form-control" placeholder="Enter product name">
+                        <small id="productNameHelper" class="help-text hidden">🔒 Auto-assigned from existing record</small>
                     </div>
                     
                     <div class="product-attributes">
@@ -146,7 +140,7 @@
                                 <option value="Black">Black</option>
                                 <option value="White">White</option>
                                 <option value="Gray">Gray</option>
-                                <option value="Navy">Navy</option>
+                                <option value="Navy Blue">Navy Blue</option>
                                 <option value="Pink">Pink</option>
                                 <option value="Yellow">Yellow</option>
                                 <option value="Purple">Purple</option>
@@ -167,6 +161,19 @@
                                 <option value="10y">10y</option>
                                 <option value="11y">11y</option>
                                 <option value="12y">12y</option>
+                                <option value="14y">14y</option>
+                                <option value="4">4</option>
+                                <option value="6">6</option>
+                                <option value="8">8</option>
+                                <option value="10">10</option>
+                                <option value="12">12</option>
+                                <option value="14">14</option>
+                                <option value="16">16</option>
+                                <option value="18">18</option>
+                                <option value="20">20</option>
+                                <option value="22">22</option>
+                                <option value="24">24</option>
+                                <option value="26">26</option>
                                 <option value="XS">XS</option>
                                 <option value="S">S</option>
                                 <option value="M">M</option>
@@ -219,24 +226,23 @@
             </div>
         </section>
 
-        <!-- Demo Section for Testing -->
-        <section class="card demo-section">
+        <!-- Debug Section for Testing -->
+        <section class="card debug-section">
             <div class="card__header">
-                <h2>🧪 Demo Mode</h2>
+                <h2>🧪 Debug & Testing</h2>
             </div>
             <div class="card__body">
-                <p class="help-text">For testing without a real barcode scanner, use these sample barcodes:</p>
+                <p class="help-text">Test barcode lookup functionality with sample barcodes:</p>
                 <div class="demo-barcodes">
-                    <button class="btn btn--outline btn--sm demo-barcode-btn" data-barcode="123456789012">Existing Product A</button>
-                    <button class="btn btn--outline btn--sm demo-barcode-btn" data-barcode="987654321098">Existing Product B</button>
-                    <button class="btn btn--outline btn--sm demo-barcode-btn" data-barcode="456789123456">Existing Product C</button>
-                    <button class="btn btn--outline btn--sm demo-barcode-btn" data-barcode="111222333444">New Product Demo</button>
+                    <button class="btn btn--outline btn--sm demo-barcode-btn" data-barcode="123456789012">Existing: T-Shirt</button>
+                    <button class="btn btn--outline btn--sm demo-barcode-btn" data-barcode="987654321098">Existing: Jeans</button>
+                    <button class="btn btn--outline btn--sm demo-barcode-btn" data-barcode="456789123456">Existing: Sweater</button>
+                    <button class="btn btn--outline btn--sm demo-barcode-btn" data-barcode="999888777666">New Product</button>
                 </div>
-                <div class="demo-explanation">
-                    <small class="help-text">
-                        <strong>First 3 buttons:</strong> Simulate existing products with auto-assigned names<br>
-                        <strong>Last button:</strong> Simulates new product requiring manual name entry
-                    </small>
+                
+                <div id="debugLog" class="debug-log hidden">
+                    <h4>🔍 Debug Information:</h4>
+                    <pre id="debugOutput"></pre>
                 </div>
             </div>
         </section>
@@ -248,29 +254,24 @@
             </div>
             <div class="card__body">
                 <ol class="instructions-list">
-                    <li>Configure your Airtable connection with the required 6 fields</li>
-                    <li>Click "Start Camera" to begin scanning or use Demo Mode</li>
-                    <li><strong>For existing products:</strong> Product name is automatically assigned and locked, you can only modify quantity and optionally update color/size</li>
-                    <li><strong>For new products:</strong> Enter product name manually, select color and size</li>
-                    <li>Choose Add/Subtract and enter quantity amount</li>
-                    <li>App automatically updates existing records or creates new ones</li>
+                    <li>Configure your Airtable connection and test it</li>
+                    <li>Scan a barcode or use the test buttons above</li>
+                    <li><strong>Existing Products:</strong> Name auto-assigned, fields locked, quantity update only</li>
+                    <li><strong>New Products:</strong> Manual entry required for all product details</li>
+                    <li>Add or subtract inventory as needed</li>
+                    <li>System prevents duplicates and handles all CRUD operations</li>
                 </ol>
                 
                 <div class="workflow-info">
-                    <h4>✨ Enhanced Auto-Assignment Features</h4>
+                    <h4>🔧 Fixed Issues</h4>
                     <ul>
-                        <li>🔒 <strong>Automatic Name Assignment:</strong> Existing products get their names from the database automatically</li>
-                        <li>📝 <strong>Manual Entry Only for New:</strong> Product names can only be typed for new products</li>
-                        <li>🎯 <strong>Clear Visual Feedback:</strong> Different styling shows auto-assigned vs manual entry fields</li>
-                        <li>🔄 <strong>Smart Update Logic:</strong> Quantities are added to existing records, preventing duplicates</li>
-                        <li>🎨 <strong>Color & Size Tracking:</strong> Complete inventory management with all product attributes</li>
+                        <li>✅ Proper filterByFormula implementation for Airtable API</li>
+                        <li>🔍 Enhanced barcode lookup with debug logging</li>
+                        <li>🔒 Auto-assignment of product names from existing records</li>
+                        <li>📏 Extended size options including 14y and women's numeric sizes</li>
+                        <li>🛡️ Comprehensive error handling and retry logic</li>
+                        <li>📱 Mobile-optimized interface with touch controls</li>
                     </ul>
-                </div>
-                
-                <div class="help-links">
-                    <p><strong>Need help getting started?</strong></p>
-                    <a href="https://airtable.com/developers/web/api/introduction" target="_blank" class="help-link">📚 Airtable API Docs</a>
-                    <a href="https://airtable.com/create/tokens" target="_blank" class="help-link">🔑 Create Access Token</a>
                 </div>
             </div>
         </section>
