@@ -890,6 +890,31 @@ select.form-control {
   margin-bottom: var(--space-24);
 }
 
+/* Product Type Indicator */
+.product-type-indicator {
+  margin-top: var(--space-8);
+}
+
+.product-type-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-full);
+  display: inline-block;
+}
+
+.product-type-label.existing {
+  background: var(--color-bg-3);
+  color: var(--color-success);
+  border: 1px solid rgba(var(--color-success-rgb), 0.3);
+}
+
+.product-type-label.new {
+  background: var(--color-bg-1);
+  color: var(--color-primary);
+  border: 1px solid rgba(var(--color-primary), 0.3);
+}
+
 /* Existing Product Display */
 .existing-product-info {
   margin-bottom: var(--space-20);
@@ -897,11 +922,28 @@ select.form-control {
   background: var(--color-bg-3);
   border-radius: var(--radius-lg);
   border: 1px solid rgba(var(--color-success-rgb), 0.3);
+  animation: slideIn 0.3s ease-out;
 }
 
 .product-status {
   margin-bottom: var(--space-16);
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.auto-assignment-badge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-4) var(--space-8);
+  background: var(--color-bg-6);
+  color: var(--color-warning);
+  border: 1px solid rgba(var(--color-warning-rgb), 0.3);
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
 }
 
 .existing-details {
@@ -933,6 +975,81 @@ select.form-control {
   color: var(--color-success);
 }
 
+/* Product Name Container with Auto-Assignment Indicator */
+.product-name-container {
+  position: relative;
+}
+
+.auto-assigned-indicator {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-bg-6);
+  border: 1px solid rgba(var(--color-warning-rgb), 0.3);
+  border-top: none;
+  border-radius: 0 0 var(--radius-base) var(--radius-base);
+  padding: var(--space-8) var(--space-12);
+  font-size: var(--font-size-xs);
+  color: var(--color-warning);
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  z-index: 10;
+  animation: slideDown 0.2s ease-out;
+}
+
+.indicator-icon {
+  font-size: var(--font-size-sm);
+}
+
+.indicator-text {
+  font-weight: var(--font-weight-medium);
+}
+
+/* Field Indicator */
+.field-indicator {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-2) var(--space-6);
+  border-radius: var(--radius-sm);
+  margin-left: var(--space-8);
+}
+
+.field-indicator.auto-assigned {
+  background: var(--color-bg-6);
+  color: var(--color-warning);
+}
+
+.field-indicator.manual-entry {
+  background: var(--color-bg-1);
+  color: var(--color-primary);
+}
+
+/* Form Field States for Auto-Assignment */
+.form-control.auto-assigned {
+  background: var(--color-bg-6);
+  border-color: rgba(var(--color-warning-rgb), 0.3);
+  color: var(--color-text);
+  cursor: not-allowed;
+}
+
+.form-control.auto-assigned:focus {
+  border-color: rgba(var(--color-warning-rgb), 0.3);
+  box-shadow: none;
+  outline: none;
+}
+
+.form-control.manual-entry {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+}
+
+.form-control.manual-entry:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
 .product-info {
   margin-bottom: var(--space-20);
 }
@@ -942,34 +1059,6 @@ select.form-control {
   grid-template-columns: 1fr 1fr;
   gap: var(--space-16);
   margin-top: var(--space-16);
-}
-
-/* Enhanced styling for text input fields */
-.product-attributes .form-control {
-  font-weight: var(--font-weight-medium);
-  background-color: var(--color-surface);
-  border: 2px solid var(--color-border);
-  transition: all var(--duration-fast) var(--ease-standard);
-}
-
-.product-attributes .form-control:focus {
-  border-color: var(--color-primary);
-  background-color: var(--color-background);
-  box-shadow: var(--focus-ring);
-}
-
-.product-attributes .form-control::placeholder {
-  color: var(--color-text-secondary);
-  opacity: 0.7;
-}
-
-/* Help text styling for input examples */
-.product-attributes .help-text {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  font-style: italic;
-  margin-top: var(--space-6);
-  line-height: 1.3;
 }
 
 .current-quantity {
@@ -1041,8 +1130,18 @@ select.form-control {
 }
 
 .demo-barcode-btn {
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-base);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-8) var(--space-12);
+}
+
+.demo-explanation {
+  margin-top: var(--space-12);
+  padding: var(--space-12);
+  background: var(--color-bg-2);
+  border-radius: var(--radius-base);
+  border: 1px solid rgba(var(--color-warning-rgb), 0.2);
 }
 
 /* Instructions Section */
@@ -1104,7 +1203,7 @@ select.form-control {
   color: var(--color-primary-hover);
 }
 
-/* Loading Overlay - Ensure it's properly hidden */
+/* Loading Overlay */
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -1145,6 +1244,28 @@ select.form-control {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Touch-friendly improvements */
@@ -1194,6 +1315,14 @@ select.form-control {
   
   .quantity-value {
     font-size: var(--font-size-lg);
+  }
+  
+  .product-status {
+    align-items: stretch;
+  }
+  
+  .auto-assignment-badge {
+    justify-content: center;
   }
 }
 
@@ -1260,6 +1389,15 @@ select.form-control {
   font-size: var(--font-size-sm);
 }
 
+/* Custom color field styling */
+#customColorGroup {
+  margin-top: var(--space-12);
+  padding: var(--space-12);
+  background: var(--color-bg-2);
+  border-radius: var(--radius-base);
+  border: 1px solid rgba(var(--color-warning-rgb), 0.3);
+}
+
 /* Product form validation states */
 .form-control.invalid {
   border-color: var(--color-error);
@@ -1283,12 +1421,6 @@ select.form-control {
   color: var(--color-text-secondary);
 }
 
-/* Enhanced existing product display */
-.existing-product-info .status--info {
-  font-size: var(--font-size-sm);
-  padding: var(--space-6) var(--space-12);
-}
-
 /* Accessibility improvements */
 @media (prefers-reduced-motion: reduce) {
   .loading-spinner {
@@ -1307,6 +1439,14 @@ select.form-control {
   .loading-overlay {
     transition: none;
   }
+  
+  .existing-product-info {
+    animation: none;
+  }
+  
+  .auto-assigned-indicator {
+    animation: none;
+  }
 }
 
 /* High contrast mode support */
@@ -1322,6 +1462,10 @@ select.form-control {
   .existing-product-info {
     border-width: 2px;
   }
+  
+  .auto-assigned-indicator {
+    border-width: 2px;
+  }
 }
 
 /* Print styles (hide interactive elements) */
@@ -1334,22 +1478,6 @@ select.form-control {
   }
 }
 
-/* Animation for smooth transitions */
-.existing-product-info {
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* Focus ring improvements */
 .form-control:focus,
 .btn:focus-visible {
@@ -1357,25 +1485,17 @@ select.form-control {
   outline-offset: 2px;
 }
 
-/* Enhanced input field styling for better UX */
-.product-attributes input[type="text"] {
-  padding: var(--space-12) var(--space-16);
-  border-radius: var(--radius-md);
-  letter-spacing: 0.01em;
+/* Size and color field enhancements */
+.product-attributes .form-control {
+  font-weight: var(--font-weight-medium);
 }
 
-.product-attributes input[type="text"]:focus {
-  border-width: 2px;
-  padding: calc(var(--space-12) - 1px) calc(var(--space-16) - 1px);
+.product-attributes select option {
+  padding: var(--space-8);
 }
 
-/* Input validation visual feedback */
-.product-attributes .form-control.valid {
-  border-color: var(--color-success);
-  box-shadow: 0 0 0 1px rgba(var(--color-success-rgb), 0.2);
-}
-
-.product-attributes .form-control.invalid {
-  border-color: var(--color-error);
-  box-shadow: 0 0 0 1px rgba(var(--color-error-rgb), 0.2);
+/* Enhanced existing product styling */
+.existing-product-info .status--success {
+  font-size: var(--font-size-sm);
+  padding: var(--space-6) var(--space-12);
 }

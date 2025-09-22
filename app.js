@@ -27,56 +27,24 @@ class InventoryScanner {
     
     bindEvents() {
         // Configuration events
-        document.getElementById('saveConfig').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.saveConfiguration();
-        });
-        document.getElementById('testConnection').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.testConnection();
-        });
+        document.getElementById('saveConfig').addEventListener('click', () => this.saveConfiguration());
+        document.getElementById('testConnection').addEventListener('click', () => this.testConnection());
         
         // Scanner events
-        document.getElementById('startCamera').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.startCamera();
-        });
-        document.getElementById('stopCamera').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.stopCamera();
-        });
+        document.getElementById('startCamera').addEventListener('click', () => this.startCamera());
+        document.getElementById('stopCamera').addEventListener('click', () => this.stopCamera());
         
         // Inventory events
-        document.getElementById('addInventory').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.prepareInventoryUpdate('add');
-        });
-        document.getElementById('subtractInventory').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.prepareInventoryUpdate('subtract');
-        });
-        document.getElementById('updateInventory').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.updateInventory();
-        });
+        document.getElementById('addInventory').addEventListener('click', () => this.prepareInventoryUpdate('add'));
+        document.getElementById('subtractInventory').addEventListener('click', () => this.prepareInventoryUpdate('subtract'));
+        document.getElementById('updateInventory').addEventListener('click', () => this.updateInventory());
         
-        // Form events - updated for text inputs
+        // Form events
         document.getElementById('quantityChange').addEventListener('input', (e) => this.validateQuantityInput(e));
-        document.getElementById('productName').addEventListener('input', (e) => this.validateFormFields());
-        document.getElementById('productColor').addEventListener('input', (e) => this.validateFormFields());
-        document.getElementById('productSize').addEventListener('input', (e) => this.validateFormFields());
-        
-        // Configuration form events
-        document.getElementById('baseId').addEventListener('input', () => this.clearConfigStatus());
-        document.getElementById('tableName').addEventListener('input', () => this.clearConfigStatus());
-        document.getElementById('apiKey').addEventListener('input', () => this.clearConfigStatus());
-    }
-    
-    clearConfigStatus() {
-        const statusEl = document.getElementById('configStatus');
-        if (statusEl.classList.contains('error')) {
-            statusEl.classList.add('hidden');
-        }
+        document.getElementById('productName').addEventListener('input', (e) => this.validateProductName(e));
+        document.getElementById('productColor').addEventListener('change', (e) => this.handleColorChange(e));
+        document.getElementById('productSize').addEventListener('change', (e) => this.validateFormFields());
+        document.getElementById('customColor').addEventListener('input', (e) => this.validateFormFields());
     }
     
     setupQuickActions() {
@@ -123,32 +91,111 @@ class InventoryScanner {
         });
     }
     
+    handleColorChange(e) {
+        const customColorGroup = document.getElementById('customColorGroup');
+        const customColorInput = document.getElementById('customColor');
+        
+        if (e.target.value === 'Custom') {
+            customColorGroup.style.display = 'block';
+            customColorInput.focus();
+        } else {
+            customColorGroup.style.display = 'none';
+            customColorInput.value = '';
+        }
+        
+        this.validateFormFields();
+    }
+    
+    setProductNameFieldState(isExisting, productName = '') {
+        const productNameField = document.getElementById('productName');
+        const autoAssignedIndicator = document.getElementById('autoAssignedIndicator');
+        const productNameIndicator = document.getElementById('productNameIndicator');
+        
+        if (isExisting) {
+            // Auto-assigned state - existing product
+            productNameField.value = productName;
+            productNameField.readOnly = true;
+            productNameField.classList.remove('manual-entry');
+            productNameField.classList.add('auto-assigned');
+            productNameField.setAttribute('title', 'Product name is auto-assigned from existing record');
+            
+            // Show auto-assigned indicator
+            autoAssignedIndicator.classList.remove('hidden');
+            
+            // Update field indicator
+            productNameIndicator.textContent = '🔒 Auto-assigned';
+            productNameIndicator.classList.remove('manual-entry', 'hidden');
+            productNameIndicator.classList.add('auto-assigned');
+            
+        } else {
+            // Manual entry state - new product
+            productNameField.value = '';
+            productNameField.readOnly = false;
+            productNameField.classList.remove('auto-assigned');
+            productNameField.classList.add('manual-entry');
+            productNameField.setAttribute('title', 'Enter product name manually for new product');
+            productNameField.placeholder = 'Enter product name for new product';
+            
+            // Hide auto-assigned indicator
+            autoAssignedIndicator.classList.add('hidden');
+            
+            // Update field indicator
+            productNameIndicator.textContent = '✏️ Manual entry required';
+            productNameIndicator.classList.remove('auto-assigned', 'hidden');
+            productNameIndicator.classList.add('manual-entry');
+            
+            // Focus on the field for immediate input
+            setTimeout(() => productNameField.focus(), 100);
+        }
+    }
+    
+    updateProductTypeIndicator(isExisting) {
+        const indicator = document.getElementById('productTypeIndicator');
+        const label = document.getElementById('productTypeLabel');
+        
+        if (isExisting) {
+            label.textContent = '🔄 Existing Product - Name Auto-Assigned';
+            label.classList.remove('new');
+            label.classList.add('existing');
+        } else {
+            label.textContent = '➕ New Product - Manual Entry Required';
+            label.classList.remove('existing');
+            label.classList.add('new');
+        }
+        
+        indicator.classList.remove('hidden');
+    }
+    
     validateFormFields() {
         const productName = document.getElementById('productName').value.trim();
-        const productColor = document.getElementById('productColor').value.trim();
-        const productSize = document.getElementById('productSize').value.trim();
+        const productColor = document.getElementById('productColor').value;
+        const productSize = document.getElementById('productSize').value;
+        const customColor = document.getElementById('customColor').value.trim();
         
         const hasValidName = productName.length > 0;
-        const hasValidColor = productColor.length > 0;
+        const hasValidColor = productColor && (productColor !== 'Custom' || customColor);
         const hasValidSize = productSize.length > 0;
         
-        // For existing products, we only require quantity changes
-        const isFormValid = this.isExistingProduct ? hasValidName : 
-                           hasValidName && hasValidColor && hasValidSize;
+        // For existing products, name is auto-assigned so we only require quantity changes
+        // For new products, we require all fields including manual name entry
+        const isFormValid = this.isExistingProduct ? 
+            hasValidName : // Existing: just need the auto-assigned name (always true)
+            hasValidName && hasValidColor && hasValidSize; // New: need all fields including manual name
         
         const addBtn = document.getElementById('addInventory');
         const subtractBtn = document.getElementById('subtractInventory');
         
-        if (addBtn && subtractBtn) {
-            addBtn.disabled = !isFormValid;
-            subtractBtn.disabled = !isFormValid;
-        }
+        addBtn.disabled = !isFormValid;
+        subtractBtn.disabled = !isFormValid;
         
         // Add visual feedback
         this.updateFieldValidation('productName', hasValidName);
         if (!this.isExistingProduct) {
             this.updateFieldValidation('productColor', hasValidColor);
             this.updateFieldValidation('productSize', hasValidSize);
+            if (productColor === 'Custom') {
+                this.updateFieldValidation('customColor', customColor.length > 0);
+            }
         }
         
         return isFormValid;
@@ -156,29 +203,20 @@ class InventoryScanner {
     
     updateFieldValidation(fieldId, isValid) {
         const field = document.getElementById(fieldId);
-        if (field) {
-            if (isValid) {
-                field.classList.remove('invalid');
-                field.classList.add('valid');
-            } else {
-                field.classList.remove('valid');
-                field.classList.add('invalid');
-            }
+        if (isValid) {
+            field.classList.remove('invalid');
+            field.classList.add('valid');
+        } else {
+            field.classList.remove('valid');
+            field.classList.add('invalid');
         }
     }
     
     loadSavedConfig() {
-        // Set demo values for easier testing
-        document.getElementById('baseId').value = 'app123456789012345';
-        document.getElementById('tableName').value = 'Inventory';
-        document.getElementById('apiKey').value = 'pat123456789012345';
-        
-        // Auto-save demo config
-        this.config = {
-            baseId: 'app123456789012345',
-            tableName: 'Inventory',
-            apiKey: 'pat123456789012345'
-        };
+        // For demo purposes, we won't use localStorage as per strict instructions
+        // Instead, show helpful placeholder text
+        document.getElementById('baseId').placeholder = 'app123456789012345 (demo)';
+        document.getElementById('apiKey').placeholder = 'pat123456789012345 (demo)';
     }
     
     saveConfiguration() {
@@ -202,7 +240,7 @@ class InventoryScanner {
         }
         
         this.config = { baseId, tableName, apiKey };
-        this.showStatus('configStatus', 'success', 'Configuration saved successfully! You can now test the connection or start scanning.');
+        this.showStatus('configStatus', 'success', 'Configuration saved successfully! Click "Test Connection" to verify.');
     }
     
     async testConnection() {
@@ -217,20 +255,17 @@ class InventoryScanner {
             // Simulate network delay for demo
             await new Promise(resolve => setTimeout(resolve, 1500));
             
-            // For demo purposes, always show success for demo credentials
-            if (this.config.baseId === 'app123456789012345' || 
-                this.config.apiKey === 'pat123456789012345' ||
-                this.config.baseId.includes('demo') || 
-                this.config.apiKey.includes('demo')) {
+            // For demo purposes, simulate different responses based on credentials
+            if (this.config.baseId.includes('demo') || this.config.apiKey.includes('demo') || 
+                this.config.baseId === 'app123456789012345' || this.config.apiKey === 'pat123456789012345') {
                 this.hideLoading();
-                this.showStatus('configStatus', 'success', 'Demo mode: Connection test successful! Ready to scan with flexible Color & Size input.');
+                this.showStatus('configStatus', 'success', 'Demo mode: Connection test successful! Ready to scan with automatic product name assignment.');
             } else {
-                // Try real API call
                 const response = await this.makeAirtableRequest('GET', `/${this.config.baseId}/${this.config.tableName}?maxRecords=1`);
                 
                 this.hideLoading();
                 if (response.records !== undefined) {
-                    this.showStatus('configStatus', 'success', 'Connection successful! Ready to scan barcodes with flexible inventory tracking.');
+                    this.showStatus('configStatus', 'success', 'Connection successful! Ready to scan barcodes with automatic product name assignment.');
                 } else {
                     throw new Error('Invalid response format');
                 }
@@ -238,7 +273,7 @@ class InventoryScanner {
             
         } catch (error) {
             this.hideLoading();
-            this.showStatus('configStatus', 'error', `Connection failed: ${this.getErrorMessage(error)}. Demo mode is still available.`);
+            this.showStatus('configStatus', 'error', `Connection failed: ${this.getErrorMessage(error)}. Try using demo credentials for testing.`);
         }
     }
     
@@ -336,7 +371,7 @@ class InventoryScanner {
         document.getElementById('scanResult').classList.remove('hidden');
         
         // Look up product in demo data or Airtable
-        this.showLoading('Searching for existing product...');
+        this.showLoading('Checking if product exists in database...');
         setTimeout(() => {
             this.simulateProductLookup(barcode);
         }, 1000);
@@ -349,25 +384,25 @@ class InventoryScanner {
     simulateProductLookup(barcode) {
         this.hideLoading();
         
-        // Enhanced demo products with flexible color and size values
+        // Enhanced demo products with color and size
         const demoProducts = {
             '123456789012': { 
-                name: 'Demo T-Shirt A', 
+                name: 'Classic Blue T-Shirt', 
                 quantity: 15, 
-                color: 'Navy Blue', 
+                color: 'Blue', 
                 size: 'M' 
             },
             '987654321098': { 
-                name: 'Demo Jeans B', 
+                name: 'Premium Black Jeans', 
                 quantity: 8, 
-                color: 'Charcoal Black', 
-                size: '32x34' 
+                color: 'Black', 
+                size: 'L' 
             },
             '456789123456': { 
-                name: 'Demo Kids Sweater', 
+                name: 'Cozy Red Sweater', 
                 quantity: 3, 
-                color: 'Forest Green', 
-                size: '8y' 
+                color: 'Red', 
+                size: 'XL' 
             }
         };
         
@@ -433,6 +468,9 @@ class InventoryScanner {
         // Update section title
         document.getElementById('productSectionTitle').textContent = '🔄 Update Existing Product';
         
+        // Show product type indicator
+        this.updateProductTypeIndicator(true);
+        
         // Show existing product info panel
         document.getElementById('existingProductInfo').classList.remove('hidden');
         document.getElementById('existingProductName').textContent = productName;
@@ -440,21 +478,23 @@ class InventoryScanner {
         document.getElementById('existingProductSize').textContent = size;
         document.getElementById('existingProductQuantity').textContent = quantity;
         
-        // Pre-fill form fields (read-only for existing products)
-        document.getElementById('productName').value = productName;
-        document.getElementById('productName').readOnly = true;
+        // Set product name field state (auto-assigned, read-only)
+        this.setProductNameFieldState(true, productName);
+        
+        // Pre-fill other fields (but keep them editable for updates if needed)
         document.getElementById('productColor').value = color;
-        document.getElementById('productColor').readOnly = true;
+        document.getElementById('productColor').disabled = false; // Allow color updates
         document.getElementById('productSize').value = size;
-        document.getElementById('productSize').readOnly = true;
+        document.getElementById('productSize').disabled = false; // Allow size updates
         document.getElementById('currentQuantity').textContent = quantity;
         
-        // Clear any error messages since product is found
-        document.getElementById('updateStatus').classList.add('hidden');
+        // Hide custom color field if it was showing
+        document.getElementById('customColorGroup').style.display = 'none';
         
-        this.showStatus('updateStatus', 'success', `✅ Existing product found! Current stock: ${quantity} units (${color}, ${size}). You can now add or subtract inventory.`);
+        this.showStatus('updateStatus', 'success', 
+            `✅ Existing product found! Product name "${productName}" auto-assigned from database. Current stock: ${quantity} units. You can update quantity and optionally modify color/size.`);
         
-        // Enable action buttons
+        // Enable action buttons since we have all required data
         this.validateFormFields();
     }
     
@@ -464,35 +504,49 @@ class InventoryScanner {
         // Update section title
         document.getElementById('productSectionTitle').textContent = '➕ Add New Product';
         
+        // Show product type indicator
+        this.updateProductTypeIndicator(false);
+        
         // Hide existing product info panel
         document.getElementById('existingProductInfo').classList.add('hidden');
         
-        // Clear and enable form fields
-        document.getElementById('productName').value = '';
-        document.getElementById('productName').readOnly = false;
-        document.getElementById('productName').focus();
+        // Set product name field state (manual entry required)
+        this.setProductNameFieldState(false);
+        
+        // Clear and enable other form fields
         document.getElementById('productColor').value = '';
-        document.getElementById('productColor').readOnly = false;
+        document.getElementById('productColor').disabled = false;
         document.getElementById('productSize').value = '';
-        document.getElementById('productSize').readOnly = false;
+        document.getElementById('productSize').disabled = false;
         document.getElementById('currentQuantity').textContent = '0';
         
-        this.showStatus('updateStatus', 'info', '📦 New product detected! Please enter product name, type in color and size manually, then set initial quantity.');
+        // Hide custom color field initially
+        document.getElementById('customColorGroup').style.display = 'none';
+        document.getElementById('customColor').value = '';
         
-        // Disable action buttons until form is complete
+        this.showStatus('updateStatus', 'info', 
+            '📦 New product detected! Please enter the product name manually, then select color and size to set initial quantity.');
+        
+        // Disable action buttons until form is complete (including manual name entry)
         this.validateFormFields();
     }
     
     prepareInventoryUpdate(action) {
         if (!this.validateFormFields()) {
             const missingFields = [];
-            if (!document.getElementById('productName').value.trim()) missingFields.push('Product Name');
+            if (!document.getElementById('productName').value.trim()) {
+                missingFields.push(this.isExistingProduct ? 'Product Name (should be auto-assigned)' : 'Product Name (manual entry required)');
+            }
             if (!this.isExistingProduct) {
-                if (!document.getElementById('productColor').value.trim()) missingFields.push('Color');
-                if (!document.getElementById('productSize').value.trim()) missingFields.push('Size');
+                if (!document.getElementById('productColor').value || 
+                    (document.getElementById('productColor').value === 'Custom' && 
+                     !document.getElementById('customColor').value.trim())) {
+                    missingFields.push('Color');
+                }
+                if (!document.getElementById('productSize').value) missingFields.push('Size');
             }
             
-            this.showStatus('updateStatus', 'error', `Please fill in required fields: ${missingFields.join(', ')}`);
+            this.showStatus('updateStatus', 'error', `Please complete required fields: ${missingFields.join(', ')}`);
             return;
         }
         
@@ -512,14 +566,19 @@ class InventoryScanner {
         document.getElementById('updateInventory').classList.remove('hidden');
         
         const actionText = action === 'add' ? 'Add' : 'Subtract';
-        const operationType = this.isExistingProduct ? 'Update' : 'Create';
-        document.getElementById('updateInventory').textContent = `${actionText} ${quantityChange} - ${operationType} Record`;
+        const operationType = this.isExistingProduct ? 'Update Existing' : 'Create New';
+        const productName = document.getElementById('productName').value.trim();
+        document.getElementById('updateInventory').textContent = `${actionText} ${quantityChange} - ${operationType}`;
         
         const currentQty = parseInt(document.getElementById('currentQuantity').textContent) || 0;
         const newQty = action === 'add' ? currentQty + quantityChange : Math.max(0, currentQty - quantityChange);
         
+        const assignmentInfo = this.isExistingProduct ? 
+            `for "${productName}" (auto-assigned)` : 
+            `for "${productName}" (manual entry)`;
+        
         this.showStatus('updateStatus', 'info', 
-            `Ready to ${action} ${quantityChange} units${this.isExistingProduct ? 
+            `Ready to ${action} ${quantityChange} units ${assignmentInfo}${this.isExistingProduct ? 
             ` (${currentQty} → ${newQty})` : ` as new product`}. Click button to confirm.`);
     }
     
@@ -530,9 +589,12 @@ class InventoryScanner {
         const productName = document.getElementById('productName').value.trim();
         const currentQuantity = parseInt(document.getElementById('currentQuantity').textContent) || 0;
         
-        // Get color and size values - now from text inputs
-        const color = document.getElementById('productColor').value.trim();
-        const size = document.getElementById('productSize').value.trim();
+        // Get color value (handle custom color)
+        let color = document.getElementById('productColor').value;
+        if (color === 'Custom') {
+            color = document.getElementById('customColor').value.trim();
+        }
+        const size = document.getElementById('productSize').value;
         
         let newQuantity;
         if (action === 'add') {
@@ -544,7 +606,8 @@ class InventoryScanner {
             }
         }
         
-        this.showLoading(`${this.isExistingProduct ? 'Updating' : 'Creating'} inventory record...`);
+        const operationType = this.isExistingProduct ? 'Updating existing product' : 'Creating new product';
+        this.showLoading(`${operationType}...`);
         
         try {
             // Simulate API call delay
@@ -570,10 +633,16 @@ class InventoryScanner {
                 let response;
                 if (this.currentProduct && !this.currentProduct.id.startsWith('demo_')) {
                     // Update existing record using PATCH
+                    const updateFields = { 
+                        'Quantity': newQuantity, 
+                        'Color': color,
+                        'Size': size,
+                        'Last Updated': now 
+                    };
                     response = await this.makeAirtableRequest(
                         'PATCH',
                         `/${this.config.baseId}/${this.config.tableName}/${this.currentProduct.id}`,
-                        { fields: { 'Quantity': newQuantity, 'Last Updated': now } }
+                        { fields: updateFields }
                     );
                 } else {
                     // Create new record
@@ -596,6 +665,8 @@ class InventoryScanner {
     handleInventoryUpdateSuccess(newQuantity, action, quantityChange, productDetails) {
         this.hideLoading();
         
+        const productName = document.getElementById('productName').value.trim();
+        
         // Update UI
         document.getElementById('currentQuantity').textContent = newQuantity;
         
@@ -603,11 +674,11 @@ class InventoryScanner {
             // Update existing product display
             document.getElementById('existingProductQuantity').textContent = newQuantity;
             this.showStatus('updateStatus', 'success', 
-                `✅ Successfully ${action === 'add' ? 'added' : 'subtracted'} ${quantityChange} units! New quantity: ${newQuantity}`);
+                `✅ Successfully ${action === 'add' ? 'added' : 'subtracted'} ${quantityChange} units for "${productName}" (auto-assigned)! New quantity: ${newQuantity}`);
         } else {
             // Show success for new product
             this.showStatus('updateStatus', 'success', 
-                `✅ New product created successfully! Initial quantity: ${newQuantity} units (Color: ${productDetails.color}, Size: ${productDetails.size})`);
+                `✅ New product "${productName}" created successfully! Initial quantity: ${newQuantity} units (Color: ${productDetails.color}, Size: ${productDetails.size})`);
         }
         
         // Reset form
@@ -621,7 +692,7 @@ class InventoryScanner {
         // Auto-hide success message and reset after delay
         setTimeout(() => {
             this.resetForNextScan();
-        }, 4000);
+        }, 5000);
     }
     
     resetInventoryForm() {
@@ -646,15 +717,29 @@ class InventoryScanner {
         document.getElementById('scanResult').classList.add('hidden');
         document.getElementById('updateStatus').classList.add('hidden');
         document.getElementById('existingProductInfo').classList.add('hidden');
+        document.getElementById('productTypeIndicator').classList.add('hidden');
         document.getElementById('productSectionTitle').textContent = '📋 Product Management';
         
-        // Reset form
-        document.getElementById('productName').value = '';
-        document.getElementById('productName').readOnly = false;
+        // Reset product name field state
+        const productNameField = document.getElementById('productName');
+        const autoAssignedIndicator = document.getElementById('autoAssignedIndicator');
+        const productNameIndicator = document.getElementById('productNameIndicator');
+        
+        productNameField.value = '';
+        productNameField.readOnly = false;
+        productNameField.classList.remove('auto-assigned', 'manual-entry');
+        productNameField.setAttribute('title', '');
+        productNameField.placeholder = 'Enter product name';
+        autoAssignedIndicator.classList.add('hidden');
+        productNameIndicator.classList.add('hidden');
+        
+        // Reset other form fields
         document.getElementById('productColor').value = '';
-        document.getElementById('productColor').readOnly = false;
+        document.getElementById('productColor').disabled = false;
         document.getElementById('productSize').value = '';
-        document.getElementById('productSize').readOnly = false;
+        document.getElementById('productSize').disabled = false;
+        document.getElementById('customColorGroup').style.display = 'none';
+        document.getElementById('customColor').value = '';
         document.getElementById('currentQuantity').textContent = '0';
         
         // Reset state
@@ -667,7 +752,7 @@ class InventoryScanner {
             field.classList.remove('valid', 'invalid');
         });
         
-        this.showStatus('configStatus', 'info', 'Ready for next scan. Use demo barcodes or start camera to continue.');
+        this.showStatus('configStatus', 'info', 'Ready for next scan. Use demo barcodes above to test automatic name assignment vs manual entry.');
     }
     
     async makeAirtableRequest(method, endpoint, data = null) {
@@ -701,40 +786,39 @@ class InventoryScanner {
         }
     }
     
+    validateProductName(e) {
+        this.validateFormFields();
+    }
+    
     showStatus(elementId, type, message) {
         const statusEl = document.getElementById(elementId);
-        if (statusEl) {
-            statusEl.className = `status-message ${type}`;
-            statusEl.textContent = message;
-            statusEl.classList.remove('hidden');
-            
-            // Auto-hide success and info messages (but keep error messages visible)
-            if (type === 'success') {
-                setTimeout(() => {
-                    statusEl.classList.add('hidden');
-                }, 6000);
-            } else if (type === 'info') {
-                setTimeout(() => {
-                    statusEl.classList.add('hidden');
-                }, 5000);
-            }
+        statusEl.className = `status-message ${type}`;
+        statusEl.textContent = message;
+        statusEl.classList.remove('hidden');
+        
+        // Auto-hide success and info messages (but keep error messages visible)
+        if (type === 'success') {
+            setTimeout(() => {
+                statusEl.classList.add('hidden');
+            }, 8000);
+        } else if (type === 'info') {
+            setTimeout(() => {
+                statusEl.classList.add('hidden');
+            }, 6000);
         }
     }
     
     showLoading(message = 'Loading...') {
-        const loadingMessage = document.getElementById('loadingMessage');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        if (loadingMessage) loadingMessage.textContent = message;
-        if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+        document.getElementById('loadingMessage').textContent = message;
+        document.getElementById('loadingOverlay').classList.remove('hidden');
     }
     
     hideLoading() {
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        document.getElementById('loadingOverlay').classList.add('hidden');
     }
     
     getErrorMessage(error) {
-        if (error && error.message) {
+        if (error.message) {
             return error.message;
         }
         
@@ -752,28 +836,24 @@ class InventoryScanner {
 
 // Initialize the application when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    try {
-        const scanner = new InventoryScanner();
-        
-        // Add global error handler
-        window.addEventListener('error', (event) => {
-            console.error('Global error:', event.error);
-        });
-        
-        // Handle page visibility changes to manage camera
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && scanner.isScanning) {
-                scanner.stopCamera();
-            }
-        });
-        
-        // Handle beforeunload to clean up camera
-        window.addEventListener('beforeunload', () => {
-            if (scanner.isScanning) {
-                scanner.stopCamera();
-            }
-        });
-    } catch (error) {
-        console.error('Failed to initialize scanner:', error);
-    }
+    const scanner = new InventoryScanner();
+    
+    // Add global error handler
+    window.addEventListener('error', (event) => {
+        console.error('Global error:', event.error);
+    });
+    
+    // Handle page visibility changes to manage camera
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && scanner.isScanning) {
+            scanner.stopCamera();
+        }
+    });
+    
+    // Handle beforeunload to clean up camera
+    window.addEventListener('beforeunload', () => {
+        if (scanner.isScanning) {
+            scanner.stopCamera();
+        }
+    });
 });
